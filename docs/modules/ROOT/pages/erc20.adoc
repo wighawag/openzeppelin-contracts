@@ -13,12 +13,14 @@ Here's what our GLD token might look like.
 
 [source,solidity]
 ----
-pragma solidity ^0.6.0;
+// contracts/GLDToken.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract GLDToken is ERC20 {
-    constructor(uint256 initialSupply) ERC20("Gold", "GLD") public {
+    constructor(uint256 initialSupply) ERC20("Gold", "GLD") {
         _mint(msg.sender, initialSupply);
     }
 }
@@ -33,18 +35,18 @@ That's it! Once deployed, we will be able to query the deployer's balance:
 [source,javascript]
 ----
 > GLDToken.balanceOf(deployerAddress)
-1000
+1000000000000000000000
 ----
 
 We can also xref:api:token/ERC20.adoc#IERC20-transfer-address-uint256-[transfer] these tokens to other accounts:
 
 [source,javascript]
 ----
-> GLDToken.transfer(otherAddress, 300)
+> GLDToken.transfer(otherAddress, 300000000000000000000)
 > GLDToken.balanceOf(otherAddress)
-300
+300000000000000000000
 > GLDToken.balanceOf(deployerAddress)
-700
+700000000000000000000
 ----
 
 [[a-note-on-decimals]]
@@ -60,10 +62,22 @@ It is important to understand that `decimals` is _only used for display purposes
 
 You'll probably want to use a `decimals` value of `18`, just like Ether and most ERC20 token contracts in use, unless you have a very special reason not to. When minting tokens or transferring them around, you will be actually sending the number `num GLD * 10^decimals`.
 
-NOTE: By default, `ERC20` uses a value of `18` for `decimals`. To use a different value, you will need to call xref:api:token/ERC20.adoc#ERC20-_setupDecimals-uint8-[_setupDecimals] in your constructor.
+NOTE: By default, `ERC20` uses a value of `18` for `decimals`. To use a different value, you will need to override the `decimals()` function in your contract.
 
-So if you want to send `5` tokens using a token contract with 18 decimals, the the method to call will actually be:
+```solidity
+function decimals() public view virtual override returns (uint8) {
+  return 16;
+}
+```
+
+So if you want to send `5` tokens using a token contract with 18 decimals, the method to call will actually be:
 
 ```solidity
 transfer(recipient, 5 * 10^18);
 ```
+
+[[Presets]]
+== Preset ERC20 contract
+A preset ERC20 is available, xref:api:presets#ERC20PresetMinterPauser[`ERC20PresetMinterPauser`]. It is preset to allow for token minting (create), stop all token transfers (pause) and allow holders to burn (destroy) their tokens. The contract uses xref:access-control.adoc[Access Control] to control access to the minting and pausing functionality.  The account that deploys the contract will be granted the minter and pauser roles, as well as the default admin role.
+
+This contract is ready to deploy without having to write any Solidity code.  It can be used as-is for quick prototyping and testing, but is also suitable for production environments.
